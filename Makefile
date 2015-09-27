@@ -8,14 +8,11 @@ PKGS = $(PKG) $(SUBPKGS)
 
 test: $(PKGS)
 
-$(GOLINT):
+GOLINT:
 	go get -u github.com/golang/lint/golint
 
-$(PKGS): $(GOLINT)
-ifneq ($(NOLINT),1)
-	@PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
-	@echo ""
-endif
+$(PKGS): GOLINT
+	golint $(GOPATH)/src/$@*/**.go
 	go get -d -t $@
 ifeq ($(COVERAGE),1)
 	go test -cover -coverprofile=$(GOPATH)/src/$@/c.out $@ -test.v
