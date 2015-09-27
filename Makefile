@@ -8,7 +8,10 @@ PKGS = $(PKG) $(SUBPKGS)
 
 test: $(PKGS)
 
-$(PKGS):
+$(GOLINT):
+	go get github.com/golang/lint/golint
+
+$(PKGS): $(GOLINT)
 ifneq ($(NOLINT),1)
 	@PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
 	@echo ""
