@@ -9,8 +9,7 @@ PKGS = $(PKG) $(SUBPKGS)
 test: $(PKGS)
 
 $(GOLINT):
-	go get github.com/golang/lint/golint
-	go install github.com/golang/lint/golint
+	go get -u github.com/golang/lint/golint
 
 $(PKGS): $(GOLINT)
 ifneq ($(NOLINT),1)
