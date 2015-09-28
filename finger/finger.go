@@ -1,7 +1,7 @@
 package finger
 
 import (
-	"crypto/sha256"
+	"github.com/doodles526/go-octopus/valhash"
 )
 
 // Data is stored at successor ID
@@ -11,7 +11,7 @@ type fingerEntry struct {
 }
 
 type FingerTable struct {
-	value *fingerEntry
+	value *valhash.ValHash
 	left  *FingerTable
 	right *FingerTable
 }
@@ -21,20 +21,18 @@ func NewFingerTable() FingerTable {
 }
 
 func (f *FingerTable) Insert(ipAddr string) {
-	hash := sha256.Sum256([]byte(ipAddr))
-	hashStr := string(hash[:sha256.Size])
-	entry := fingerEntry{Ip: ipAddr, hashID: hashStr}
+	entry := valhash.NewValHash([]byte(ipAddr))
 	f.insert(entry)
 }
 
 // TODO: Get rid of nested conditional
-func (f *FingerTable) insert(newNode fingerEntry) {
+func (f *FingerTable) insert(newNode *valhash.ValHash) {
 	if f.value == nil {
-		f.value = &newNode
+		f.value = newNode
 		return
 	}
 
-	if newNode.hashID < f.value.hashID {
+	if newNode.Compare(f.value) < 0 {
 		if f.left == nil {
 			f.left = &FingerTable{}
 		}
@@ -48,12 +46,13 @@ func (f *FingerTable) insert(newNode fingerEntry) {
 }
 
 // ClosestSuccessor gets the closest node identified by the given hash
-func (f *FingerTable) ClosestPredecessor(hashID string) string {
-	if pred := f.closestPredecessor(hashID, nil); pred != nil {
-		return pred.Ip
+func (f *FingerTable) ClosestPredecessor(data []byte) string {
+	valHash := valhash.NewValHash(data)
+	if pred := f.closestPredecessor(valHash, nil); pred != nil {
+		return string(pred.Value)
 	}
 
-	return f.largestNode().value.Ip
+	return string(f.largestNode().value.Value)
 }
 
 func (f *FingerTable) largestNode() *FingerTable {
@@ -66,17 +65,17 @@ func (f *FingerTable) largestNode() *FingerTable {
 // closestGreaterThanEq returns the closest node which
 // is greater than the given key
 // if no node is greater then return nil
-func (f *FingerTable) closestPredecessor(hashID string, retEntry *fingerEntry) *fingerEntry {
+func (f *FingerTable) closestPredecessor(valHash *valhash.ValHash, retEntry *valhash.ValHash) *valhash.ValHash {
 	if f == nil {
 		return retEntry
 	}
 
-	if hashID < f.value.hashID {
-		return f.left.closestPredecessor(hashID, retEntry)
-	} else if hashID == f.value.hashID {
+	if valHash.Compare(f.value) < 0 {
+		return f.left.closestPredecessor(valHash, retEntry)
+	} else if valHash.Compare(f.value) == 0 {
 		return f.value
 	} else {
-		return f.right.closestPredecessor(hashID, f.value)
+		return f.right.closestPredecessor(valHash, f.value)
 	}
 
 }
